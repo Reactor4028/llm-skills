@@ -1,0 +1,171 @@
+{
+  "skill_name": "tcpdump",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Wireshark is blocked on my work Mac. I have a capture at ~/Desktop/upload-fail.pcapng. Show me the TCP conversations and whether there were any resets.",
+      "expected_output": "Reads the file with a full-path tcpdump -r command, summarizes conversations and resets from the output, and states what tcpdump cannot provide compared with Wireshark (such as per-conversation byte totals).",
+      "files": [],
+      "assertions": [
+        "Reads the file with /usr/sbin/tcpdump or /opt/homebrew/opt/tcpdump/bin/tcpdump using a full path, not a bare tcpdump",
+        "Every tcpdump read command places -r FILE before other options",
+        "Does not run, install or recommend Wireshark, tshark, mergecap or editcap",
+        "States at least one concrete gap versus Wireshark",
+        "Does not use sudo to read the file"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I'm on the VPN. Capture what Slack connects to while I open a channel, and tell me which connections go over the tunnel.",
+      "expected_output": "Runs discover.py, uses its app list, routes and notes to choose Apple tcpdump with -i pktap,all and a process metadata filter, hands the user one sudo capture block that writes to the per-user temp folder and prints the capture path, then waits for the pasted output before analysing.",
+      "files": [],
+      "assertions": [
+        "Runs python3 scripts/discover.py before building the capture command",
+        "The capture command uses /usr/sbin/tcpdump with -i pktap,all",
+        "The capture command uses --apple-md-filter with a process name taken from discovery process_names",
+        "Does not run sudo itself; gives the user a block to run and asks for the pasted output",
+        "The capture path is built from getconf DARWIN_USER_TEMP_DIR, not $TMPDIR",
+        "Does not claim capture results before the user pastes output"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I ran tcpdump -k NP -i en0 and it says invalid option. I thought macOS tcpdump had process info?",
+      "expected_output": "Explains that a bare tcpdump resolves to the Homebrew build, which lacks Apple's -k option, and gives the same command with /usr/sbin/tcpdump.",
+      "files": [],
+      "assertions": [
+        "Identifies that bare tcpdump resolves to Homebrew (from discovery or which/command -v)",
+        "Recommends /usr/sbin/tcpdump by full path",
+        "Does not suggest uninstalling, reinstalling or changing PATH as the fix",
+        "Any live-capture command is handed to the user rather than run by the agent"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "My capture with --apple-md-filter \"pid = 4567\" got 0 packets. I restarted the app right before I started it.",
+      "expected_output": "Identifies the stale PID as the likely cause, reruns discovery to get current PIDs and process names, and gives a corrected filter (prefer process name or eproc/epid). States that zero packets does not mean the app was idle.",
+      "files": [],
+      "assertions": [
+        "Names the app restart invalidating the PID as the likely cause",
+        "Reruns discover.py (or asks to) to get current PIDs or process names",
+        "Proposes a filter using proc/eproc or the new pid/epid",
+        "Does not claim the app sent no traffic"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Does DNS for intranet.example.com go through my VPN or out my Wi-Fi?",
+      "expected_output": "Runs discover.py with --target intranet.example.com, reports which interface the relevant nameservers and the target route via, labels this as a routing prediction, and offers a user-run capture on port 53 to confirm.",
+      "files": [],
+      "assertions": [
+        "Runs discover.py with --target intranet.example.com",
+        "Reports the interface for the resolver nameservers from dns_resolvers",
+        "States that a route lookup predicts the path and a capture is needed to prove it",
+        "Any capture offered includes port 53 and is handed to the user",
+        "Does not suggest changing DNS, routes, hosts or VPN settings"
+      ]
+    }
+  ],
+  "trigger_queries": [
+    {
+      "query": "wireshark isnt allowed on this laptop, how can i see what Slack is actually sending?",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "Run tshark -r ~/Desktop/upload-fail.pcapng -q -z conv,tcp and tell me the top talkers",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "Which interface is my traffic to 10.20.30.40 going out on? I'm on the VPN right now",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "capture while I reproduce the login timeout in our desktop app, then tell me what it connected to",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "tcpdump -k NP -i en0 says invalid option, what am I doing wrong",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "my capture file is 24 bytes after I hit ctrl-c, why is it empty??",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "query": "Open capture.pcapng in Wireshark and show me the retransmissions",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "query": "I need to know if DNS for intranet.example.com goes through the tunnel or straight out my Wi-Fi",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "query": "what is zoom phoning home to when it sits idle? need proof for security",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "query": "Read ~/Desktop/trace.pcap and summarize which hosts talked the most and when traffic spiked",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "query": "Write a pf rule to block 203.0.113.10 on my Mac",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "Capture traffic with tcpdump on eth0 on my Ubuntu server",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "Why does this API return 403 when I call it with curl from my Mac?",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "How do I set up a packet capture on Windows 11 with pktmon?",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "Configure split tunneling for our GlobalProtect portal so Zoom bypasses the VPN",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "Set up Little Snitch rules so an app can't make outbound connections",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "query": "My MacBook Wi-Fi keeps dropping every 10 minutes, how do I fix it?",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "query": "Write a Python script that parses nginx access logs and lists the top client IPs",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "query": "Is port 443 open on example.com? quick check from terminal",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "query": "Explain the TCP three-way handshake for my Network+ study notes",
+      "should_trigger": false,
+      "split": "validation"
+    }
+  ]
+}
